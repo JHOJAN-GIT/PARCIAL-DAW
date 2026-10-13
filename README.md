@@ -1,32 +1,99 @@
-# React + TypeScript + Vite
+# Sistema de Gestión de Biblioteca
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> Proyecto Parcial — Desarrollo de Aplicaciones Web
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Integrantes
 
-## React Compiler
+| Integrante | Código | Rol |
+|---|---|---|
+| **Antezana Villegas, Jhojan Manuel** | — | Lógica e implementación de estructura |
+| **Camargo Alvarado, Edison Roberto** | — | Interfaz visual y componentes frontend |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Facultad de Ingeniería de Sistemas**
+**Universidad Nacional del Centro del Perú (UNCP)**
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## División de trabajo
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### Jhojan Manuel Antezana Villegas
+Se encargó de toda la lógica del sistema e implementación de la estructura del proyecto:
+- Arquitectura del proyecto (rutas, contexto global, hooks)
+- `context/BibliotecaContext.tsx` — estado global con React Context
+- `hooks/useLocalStorage.ts` — persistencia en Local Storage
+- `types/index.ts` — definición de interfaces TypeScript
+- `pages/user/BuscarLibros.tsx` — lógica de búsqueda, filtros y solicitud de préstamos
+- `pages/user/Historial.tsx` — lógica de historial, filtros y devolución de libros
+- `utils/comprobante.ts` — generación de PDF con jsPDF
+- Configuración base: `App.tsx`, `main.tsx`, `vite.config.ts`
+
+### Edison Roberto Camargo Alvarado
+Se encargó de toda la interfaz visual y componentes de administración:
+- `components/Navbar.tsx` — barra de navegación con selector de usuario activo
+- `pages/admin/AdminCategorias.tsx` — módulo CRUD de categorías
+- `pages/admin/AdminLibros.tsx` — módulo CRUD de libros
+- `pages/admin/AdminUsuarios.tsx` — módulo CRUD de usuarios
+- `index.css` — estilos globales (navbar, tablas, formularios, tarjetas, badges)
+
+---
+
+## Tecnologías usadas
+
+- **React 19** + **TypeScript**
+- **Vite 8**
+- **React Router DOM v7**
+- **Tailwind CSS v4**
+- **jsPDF** — generación de comprobantes PDF
+- **Local Storage** — persistencia de datos sin backend
+
+---
+
+## Instalación y ejecución
+
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## Flujo del sistema
+
+1. Ir a **Categorías** → crear las categorías de libros
+2. Ir a **Libros** → registrar libros (requiere categorías creadas)
+3. Ir a **Usuarios** → registrar los usuarios del sistema
+4. En el **Navbar** → seleccionar el usuario activo en el dropdown
+5. Ir a **Buscar y Prestar** → buscar libros y solicitar préstamos (genera PDF automático)
+6. Ir a **Historial** → ver préstamos, descargar PDF o devolver libros
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── assets/
+├── components/
+│   └── Navbar.tsx
+├── context/
+│   └── BibliotecaContext.tsx
+├── hooks/
+│   └── useLocalStorage.ts
+├── pages/
+│   ├── admin/
+│   │   ├── AdminCategorias.tsx
+│   │   ├── AdminLibros.tsx
+│   │   └── AdminUsuarios.tsx
+│   └── user/
+│       ├── BuscarLibros.tsx
+│       └── Historial.tsx
+├── types/
+│   └── index.ts
+├── utils/
+│   └── comprobante.ts
+├── App.tsx
+├── main.tsx
+└── index.css
+```
