@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { Categoria, Libro, Usuario, Prestamo } from "../types";
+import type { Categoria, Libro, Usuario, Prestamo } from "../types";
 
 interface ContextType {
   categorias: Categoria[];
