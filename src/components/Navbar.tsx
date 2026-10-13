@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useBiblioteca } from "../context/BibliotecaContext";
+import { Link } from 'react-router-dom';
+import { useBiblioteca } from '../context/BibliotecaContext';
 
 export default function Navbar() {
   const { usuarios, usuarioActivo, setUsuarioActivo } = useBiblioteca();
@@ -14,11 +14,11 @@ export default function Navbar() {
 
       <select
         value={usuarioActivo}
-        onChange={(e) => setUsuarioActivo(e.target.value)}
-        style={{ marginLeft: "auto", minWidth: "180px" }}
+        onChange={e => setUsuarioActivo(e.target.value)}
+        style={{ marginLeft: 'auto', minWidth: '180px' }}
       >
         <option value="">-- Usuario activo --</option>
-        {usuarios.map((u) => (
+        {usuarios.map(u => (
           <option key={u.id} value={u.id}>
             {u.nombres} {u.apellidos}
           </option>

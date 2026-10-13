@@ -18,7 +18,7 @@ export interface Usuario {
   apellidos: string;
   codigo: string;
   correo: string;
-  tipo: "Estudiante" | "Docente";
+  tipo: 'Estudiante' | 'Docente';
 }
 
 export interface Prestamo {
@@ -29,5 +29,5 @@ export interface Prestamo {
   fechaPrestamo: string;
   fechaLimite: string;
   fechaDevolucion?: string;
-  estado: "Activo" | "Devuelto";
+  estado: 'Activo' | 'Devuelto';
 }

@@ -1,6 +1,6 @@
-import { createContext, useContext, ReactNode } from "react";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import { Categoria, Libro, Usuario, Prestamo } from "../types";
+import { createContext, useContext, ReactNode } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Categoria, Libro, Usuario, Prestamo } from '../types';
 
 interface ContextType {
   categorias: Categoria[];
@@ -18,34 +18,20 @@ interface ContextType {
 const BibliotecaContext = createContext<ContextType | null>(null);
 
 export function BibliotecaProvider({ children }: { children: ReactNode }) {
-  const [categorias, setCategorias] = useLocalStorage<Categoria[]>(
-    "categorias",
-    [],
-  );
-  const [libros, setLibros] = useLocalStorage<Libro[]>("libros", []);
-  const [usuarios, setUsuarios] = useLocalStorage<Usuario[]>("usuarios", []);
-  const [prestamos, setPrestamos] = useLocalStorage<Prestamo[]>(
-    "prestamos",
-    [],
-  );
-  const [usuarioActivo, setUsuarioActivo] = useLocalStorage<string>(
-    "usuarioActivo",
-    "",
-  );
+  const [categorias, setCategorias] = useLocalStorage<Categoria[]>('categorias', []);
+  const [libros, setLibros] = useLocalStorage<Libro[]>('libros', []);
+  const [usuarios, setUsuarios] = useLocalStorage<Usuario[]>('usuarios', []);
+  const [prestamos, setPrestamos] = useLocalStorage<Prestamo[]>('prestamos', []);
+  const [usuarioActivo, setUsuarioActivo] = useLocalStorage<string>('usuarioActivo', '');
 
   return (
     <BibliotecaContext.Provider
       value={{
-        categorias,
-        setCategorias,
-        libros,
-        setLibros,
-        usuarios,
-        setUsuarios,
-        prestamos,
-        setPrestamos,
-        usuarioActivo,
-        setUsuarioActivo,
+        categorias, setCategorias,
+        libros, setLibros,
+        usuarios, setUsuarios,
+        prestamos, setPrestamos,
+        usuarioActivo, setUsuarioActivo,
       }}
     >
       {children}
@@ -55,6 +41,6 @@ export function BibliotecaProvider({ children }: { children: ReactNode }) {
 
 export const useBiblioteca = () => {
   const ctx = useContext(BibliotecaContext);
-  if (!ctx) throw new Error("Debe usarse dentro de BibliotecaProvider");
+  if (!ctx) throw new Error('Debe usarse dentro de BibliotecaProvider');
   return ctx;
 };
