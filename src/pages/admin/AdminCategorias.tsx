@@ -1,106 +1,117 @@
-import { useState } from 'react';
-import { useBiblioteca } from '../../context/BibliotecaContext';
+import { useState } from "react";
+import { useBiblioteca } from "../../context/BibliotecaContext";
 
 export default function AdminCategorias() {
   const { categorias, setCategorias, libros } = useBiblioteca();
-  const [nombre, setNombre] = useState('');
-  const [editando, setEditando] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [nombre, setNombre] = useState("");
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const guardar = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!nombre.trim()) return setError('El nombre es obligatorio');
-    if (nombre.trim().length < 3) return setError('Mínimo 3 caracteres');
-
-    const duplicado = categorias.some(
-      c => c.nombre.toLowerCase() === nombre.trim().toLowerCase() && c.id !== editando
+  function validar(valor: string, excludeId?: string): string {
+    if (!valor.trim()) return "El nombre es obligatorio.";
+    if (valor.trim().length < 3) return "Mínimo 3 caracteres.";
+    const dup = categorias.find(
+      (c) => c.nombre.toLowerCase() === valor.trim().toLowerCase() && c.id !== excludeId
     );
-    if (duplicado) return setError('Ya existe una categoría con ese nombre');
+    if (dup) return "Ya existe una categoría con ese nombre.";
+    return "";
+  }
 
-    if (editando) {
-      setCategorias(
-        categorias.map(c => (c.id === editando ? { ...c, nombre: nombre.trim() } : c))
-      );
-      setEditando(null);
+  function guardar() {
+    const err = validar(nombre, editandoId ?? undefined);
+    if (err) { setError(err); return; }
+    if (editandoId) {
+      setCategorias(categorias.map((c) => c.id === editandoId ? { ...c, nombre: nombre.trim() } : c));
+      setEditandoId(null);
     } else {
-      setCategorias([
-        ...categorias,
-        { id: crypto.randomUUID(), nombre: nombre.trim() },
-      ]);
+      setCategorias([...categorias, { id: crypto.randomUUID(), nombre: nombre.trim() }]);
     }
-    setNombre('');
-  };
+    setNombre(""); setError("");
+  }
 
-  const eliminar = (id: string) => {
-    const tieneLibros = libros.some(l => l.categoriaId === id);
-    if (tieneLibros) return alert('No se puede eliminar: hay libros asociados');
-    if (confirm('¿Eliminar categoría?')) {
-      setCategorias(categorias.filter(c => c.id !== id));
-    }
-  };
+  function editar(id: string) {
+    const cat = categorias.find((c) => c.id === id)!;
+    setEditandoId(id); setNombre(cat.nombre); setError("");
+  }
 
-  const editar = (id: string) => {
-    const c = categorias.find(x => x.id === id);
-    if (c) {
-      setNombre(c.nombre);
-      setEditando(id);
+  function eliminar(id: string) {
+    if (libros.some((l) => l.categoriaId === id)) {
+      setError("No se puede eliminar: tiene libros asociados."); return;
     }
-  };
+    setCategorias(categorias.filter((c) => c.id !== id));
+  }
+
+  function cancelar() {
+    setEditandoId(null); setNombre(""); setError("");
+  }
 
   return (
     <div className="container">
-      <h2>📚 Gestión de Categorías</h2>
-      <form onSubmit={guardar}>
+      <h2>🏷️ Gestión de Categorías</h2>
+
+      <form onSubmit={(e) => { e.preventDefault(); guardar(); }}>
         <input
-          placeholder="Nombre de la categoría"
+          placeholder="Nombre de categoría"
           value={nombre}
-          onChange={e => setNombre(e.target.value)}
+          onChange={(e) => setNombre(e.target.value)}
+          style={{ flex: 1, minWidth: "220px" }}
         />
-        <button type="submit">{editando ? 'Actualizar' : 'Registrar'}</button>
-        {editando && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditando(null);
-              setNombre('');
-            }}
-          >
-            Cancelar
-          </button>
+        <button type="submit">{editandoId ? "✏️ Actualizar" : "➕ Agregar"}</button>
+        {editandoId && (
+          <button type="button" className="secondary" onClick={cancelar}>Cancelar</button>
         )}
       </form>
+
       {error && <p className="error">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {categorias.map(c => (
-            <tr key={c.id}>
-              <td>{c.nombre}</td>
-              <td>
-                <button onClick={() => editar(c.id)}>Editar</button>{' '}
-                <button className="danger" onClick={() => eliminar(c.id)}>
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          ))}
-          {categorias.length === 0 && (
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <thead>
             <tr>
-              <td colSpan={2} style={{ textAlign: 'center' }}>
-                No hay categorías registradas
-              </td>
+              <th style={{ width: "50px" }}>#</th>
+              <th>Nombre</th>
+              <th>Libros</th>
+              <th style={{ textAlign: "right" }}>Acciones</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {categorias.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", color: "#94a3b8", padding: "2rem" }}>
+                  Sin categorías registradas
+                </td>
+              </tr>
+            ) : (
+              categorias.map((c, i) => (
+                <tr key={c.id}>
+                  <td style={{ color: "#94a3b8", fontWeight: 600 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 600 }}>{c.nombre}</td>
+                  <td>
+                    <span className="badge badge-activo">
+                      {libros.filter((l) => l.categoriaId === c.id).length} libros
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <button
+                      style={{ marginRight: "0.5rem", padding: "0.35rem 0.8rem", fontSize: "0.8rem" }}
+                      onClick={() => editar(c.id)}
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      className="danger"
+                      style={{ padding: "0.35rem 0.8rem", fontSize: "0.8rem" }}
+                      onClick={() => eliminar(c.id)}
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

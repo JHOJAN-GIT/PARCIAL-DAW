@@ -1,141 +1,136 @@
-import { useState } from 'react';
-import { useBiblioteca } from '../../context/BibliotecaContext';
-import { generarPDF } from '../../utils/comprobante';
+import { useState } from "react";
+import { useBiblioteca } from "../../context/BibliotecaContext";
+import { generarPDF } from "../../utils/comprobante";
+
+type Filtro = "Todos" | "Activo" | "Devuelto";
 
 export default function Historial() {
-  const {
-    prestamos, setPrestamos, libros, setLibros,
-    usuarios, usuarioActivo
-  } = useBiblioteca();
+  const { prestamos, setPrestamos, libros, setLibros, usuarios, usuarioActivo } = useBiblioteca();
+  const [filtro, setFiltro] = useState<Filtro>("Todos");
 
-  const [filtroEstado, setFiltroEstado] = useState<'Todos' | 'Activo' | 'Devuelto'>('Todos');
+  const misPrestamos = prestamos.filter((p) => p.usuarioId === usuarioActivo);
+  const visibles = misPrestamos.filter((p) =>
+    filtro === "Todos" ? true : p.estado === filtro
+  );
 
-  const misPrestamos = prestamos
-    .filter(p => p.usuarioId === usuarioActivo)
-    .filter(p => filtroEstado === 'Todos' || p.estado === filtroEstado);
-
-  const devolver = (id: string) => {
-    const p = prestamos.find(x => x.id === id);
-    if (!p) return;
-    if (!confirm('¿Confirmar devolución del libro?')) return;
-
-    setPrestamos(prestamos.map(x =>
-      x.id === id
-        ? { ...x, estado: 'Devuelto', fechaDevolucion: new Date().toISOString().split('T')[0] }
-        : x
+  function devolver(id: string) {
+    const prestamo = prestamos.find((p) => p.id === id)!;
+    const fechaDevolucion = new Date().toLocaleDateString("es-PE");
+    setPrestamos(prestamos.map((p) =>
+      p.id === id ? { ...p, estado: "Devuelto", fechaDevolucion } : p
     ));
-    setLibros(libros.map(l =>
-      l.id === p.libroId ? { ...l, stock: l.stock + 1 } : l
+    setLibros(libros.map((l) =>
+      l.id === prestamo.libroId ? { ...l, stock: l.stock + 1 } : l
     ));
-  };
-
-  const usuario = usuarios.find(u => u.id === usuarioActivo);
-
-  if (!usuarioActivo) {
-    return (
-      <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
-        Debe iniciar sesión como usuario para ver su historial.
-      </div>
-    );
   }
 
+  function descargarPDF(prestamo: typeof prestamos[number]) {
+    const usuario = usuarios.find((u) => u.id === prestamo.usuarioId);
+    const libro = libros.find((l) => l.id === prestamo.libroId);
+    if (!usuario || !libro) return;
+    generarPDF(prestamo, usuario, libro);
+  }
+
+  const filtrosBtns: { label: string; value: Filtro }[] = [
+    { label: "📋 Todos", value: "Todos" },
+    { label: "🟢 Activos", value: "Activo" },
+    { label: "✅ Devueltos", value: "Devuelto" },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Mis préstamos</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            {usuario?.nombres} {usuario?.apellidos} — {usuario?.codigo}
-          </p>
+    <div className="container">
+      <h2>📋 Historial de Préstamos</h2>
+
+      {!usuarioActivo && (
+        <div className="alert-info">
+          👤 Selecciona un <strong>usuario activo</strong> en el Navbar para ver el historial.
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-            Filtrar
-          </label>
-          <select
-            value={filtroEstado}
-            onChange={e => setFiltroEstado(e.target.value as any)}
-            className="w-auto"
+      )}
+
+      {/* Filtros */}
+      <div className="filtros">
+        {filtrosBtns.map(({ label, value }) => (
+          <button
+            key={value}
+            onClick={() => setFiltro(value)}
+            className={filtro === value ? "" : "secondary"}
+            style={filtro === value ? { background: "#1e40af" } : {}}
           >
-            <option value="Todos">Todos</option>
-            <option value="Activo">Activos</option>
-            <option value="Devuelto">Devueltos</option>
-          </select>
-        </div>
+            {label}
+          </button>
+        ))}
+        {usuarioActivo && (
+          <span style={{ marginLeft: "auto", fontSize: "0.85rem", color: "#64748b", alignSelf: "center" }}>
+            {visibles.length} registro{visibles.length !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Libro</th>
+              <th>F. Préstamo</th>
+              <th>F. Límite</th>
+              <th>F. Devolución</th>
+              <th>Estado</th>
+              <th style={{ textAlign: "right" }}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibles.length === 0 ? (
               <tr>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Código</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Libro</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Préstamo</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Límite</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Devolución</th>
-                <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Estado</th>
-                <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Acciones</th>
+                <td colSpan={7} style={{ textAlign: "center", color: "#94a3b8", padding: "2rem" }}>
+                  {usuarioActivo ? "No hay préstamos para mostrar." : "—"}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {misPrestamos.map(p => {
-                const libro = libros.find(l => l.id === p.libroId);
-                const vencido = p.estado === 'Activo' && new Date(p.fechaLimite) < new Date();
+            ) : (
+              visibles.map((p) => {
+                const libro = libros.find((l) => l.id === p.libroId);
+                const vencido =
+                  p.estado === "Activo" &&
+                  new Date(p.fechaLimite.split("/").reverse().join("-")) < new Date();
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3.5 text-sm font-mono text-slate-600">{p.codigo}</td>
-                    <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{libro?.titulo || '—'}</td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{p.fechaPrestamo}</td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">
-                      {p.fechaLimite}
-                      {vencido && (
-                        <span className="ml-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-                          Vencido
-                        </span>
-                      )}
+                  <tr key={p.id}>
+                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{p.codigo}</td>
+                    <td style={{ fontWeight: 600 }}>{libro?.titulo ?? "—"}</td>
+                    <td style={{ color: "#64748b" }}>{p.fechaPrestamo}</td>
+                    <td style={{ color: vencido ? "#dc2626" : "#64748b", fontWeight: vencido ? 700 : 400 }}>
+                      {p.fechaLimite} {vencido && "⚠️"}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-500">{p.fechaDevolucion || '—'}</td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded border ${
-                        p.estado === 'Activo'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}>
+                    <td style={{ color: "#64748b" }}>{p.fechaDevolucion ?? "—"}</td>
+                    <td>
+                      <span
+                        className={`badge ${p.estado === "Activo" ? "badge-activo" : "badge-devuelto"}`}
+                      >
                         {p.estado}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       <button
-                        onClick={() => {
-                          if (usuario && libro) generarPDF(p, usuario, libro);
-                        }}
-                        className="text-sm text-slate-600 hover:text-slate-900 font-medium mr-4 transition"
+                        style={{ marginRight: "0.4rem", padding: "0.35rem 0.75rem", fontSize: "0.8rem" }}
+                        onClick={() => descargarPDF(p)}
                       >
-                        PDF
+                        📄 PDF
                       </button>
-                      {p.estado === 'Activo' && (
+                      {p.estado === "Activo" && (
                         <button
+                          className="success"
+                          style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem" }}
                           onClick={() => devolver(p.id)}
-                          className="text-sm text-emerald-700 hover:text-emerald-800 font-medium transition"
                         >
-                          Devolver
+                          ↩️ Devolver
                         </button>
                       )}
                     </td>
                   </tr>
                 );
-              })}
-              {misPrestamos.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-sm text-slate-400">
-                    No hay préstamos registrados
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

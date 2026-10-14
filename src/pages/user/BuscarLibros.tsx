@@ -1,169 +1,177 @@
-import { useState } from 'react';
-import { useBiblioteca } from '../../context/BibliotecaContext';
-import { generarPDF } from '../../utils/comprobante';
+import { useState } from "react";
+import { useBiblioteca } from "../../context/BibliotecaContext";
+import { generarPDF } from "../../utils/comprobante";
+import type { Prestamo } from "../../types";
+
+function fechaSuma(dias: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.toLocaleDateString("es-PE");
+}
+
+function hoy(): string {
+  return new Date().toLocaleDateString("es-PE");
+}
+
+function codigoPrestamo(): string {
+  return "PRES-" + Date.now().toString().slice(-6);
+}
 
 export default function BuscarLibros() {
-  const {
-    libros, categorias, usuarios, prestamos, setPrestamos,
-    setLibros, usuarioActivo
-  } = useBiblioteca();
+  const { libros, categorias, usuarios, prestamos, setPrestamos, setLibros, usuarioActivo } =
+    useBiblioteca();
 
-  const [busqueda, setBusqueda] = useState('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('');
-  const [ultimoPrestamo, setUltimoPrestamo] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [ultimoPrestamo, setUltimoPrestamo] = useState<Prestamo | null>(null);
 
-  const filtrados = libros.filter(l => {
-    const catNombre = categorias.find(c => c.id === l.categoriaId)?.nombre.toLowerCase() || '';
-    const coincide = l.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
-                     catNombre.includes(busqueda.toLowerCase());
-    const enCategoria = !categoriaFiltro || l.categoriaId === categoriaFiltro;
-    return coincide && enCategoria;
+  const librosFiltrados = libros.filter((l) => {
+    const cat = categorias.find((c) => c.id === l.categoriaId)?.nombre ?? "";
+    const coincideTexto =
+      l.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+      cat.toLowerCase().includes(busqueda.toLowerCase());
+    const coincideCategoria = filtroCategoria ? l.categoriaId === filtroCategoria : true;
+    return coincideTexto && coincideCategoria;
   });
 
-  const solicitar = (libroId: string) => {
-    if (!usuarioActivo) return alert('Debe iniciar sesión');
-    const libro = libros.find(l => l.id === libroId);
-    if (!libro || libro.stock <= 0) return alert('Sin stock disponible');
+  function solicitar(libroId: string) {
+    if (!usuarioActivo) return;
+    const libro = libros.find((l) => l.id === libroId)!;
+    if (libro.stock <= 0) return;
 
-    const usuario = usuarios.find(u => u.id === usuarioActivo)!;
-    const yaActivo = prestamos.some(
-      p => p.usuarioId === usuarioActivo && p.libroId === libroId && p.estado === 'Activo'
-    );
-    if (yaActivo) return alert('Ya tiene un préstamo activo de este libro');
-
-    const hoy = new Date();
-    const limite = new Date();
-    limite.setDate(hoy.getDate() + 7);
-
-    const nuevoPrestamo = {
+    const nuevo: Prestamo = {
       id: crypto.randomUUID(),
-      codigo: 'PR-' + Date.now().toString().slice(-8),
+      codigo: codigoPrestamo(),
       usuarioId: usuarioActivo,
       libroId,
-      fechaPrestamo: hoy.toISOString().split('T')[0],
-      fechaLimite: limite.toISOString().split('T')[0],
-      estado: 'Activo' as const
+      fechaPrestamo: hoy(),
+      fechaLimite: fechaSuma(14),
+      estado: "Activo",
     };
 
-    setPrestamos([...prestamos, nuevoPrestamo]);
-    setLibros(libros.map(l => l.id === libroId ? { ...l, stock: l.stock - 1 } : l));
-    setUltimoPrestamo(nuevoPrestamo.id);
-    generarPDF(nuevoPrestamo, usuario, libro);
-  };
+    setPrestamos([...prestamos, nuevo]);
+    setLibros(libros.map((l) => l.id === libroId ? { ...l, stock: l.stock - 1 } : l));
+    setUltimoPrestamo(nuevo);
 
-  const prestamoReciente = prestamos.find(p => p.id === ultimoPrestamo);
+    const usuario = usuarios.find((u) => u.id === usuarioActivo)!;
+    generarPDF(nuevo, usuario, libro);
+  }
+
+  const usuarioObj = usuarios.find((u) => u.id === usuarioActivo);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">Catálogo de libros</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Busque y solicite préstamos de los recursos disponibles
-        </p>
-      </div>
+    <div className="container">
+      <h2>🔍 Buscar y Solicitar Libros</h2>
 
-      {/* Filtros */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <div className="grid md:grid-cols-2 gap-3">
-          <input
-            placeholder="Buscar por título o categoría..."
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-          />
-          <select
-            value={categoriaFiltro}
-            onChange={e => setCategoriaFiltro(e.target.value)}
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </div>
-      </div>
+      {/* Buscador */}
+      <form onSubmit={(e) => e.preventDefault()}>
+        <input
+          placeholder="🔎 Buscar por título o categoría..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ flex: 1, minWidth: "240px" }}
+        />
+        <select
+          value={filtroCategoria}
+          onChange={(e) => setFiltroCategoria(e.target.value)}
+          style={{ minWidth: "180px" }}
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>{c.nombre}</option>
+          ))}
+        </select>
+      </form>
 
+      {/* Aviso sin usuario */}
       {!usuarioActivo && (
-        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
-          Debe iniciar sesión como usuario para solicitar préstamos.
+        <div className="alert-info">
+          👤 Selecciona un <strong>usuario activo</strong> en el Navbar para poder solicitar préstamos.
         </div>
       )}
-
-      {/* Grid de libros */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtrados.map(l => (
-          <div key={l.id} className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col">
-            <div className="flex items-start justify-between mb-3">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
-                l.stock > 0
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-red-50 text-red-700 border-red-200'
-              }`}>
-                {l.stock > 0 ? `${l.stock} disponibles` : 'Sin stock'}
-              </span>
-            </div>
-            <h3 className="font-semibold text-slate-900 mb-1 leading-snug">{l.titulo}</h3>
-            <p className="text-sm text-slate-600 mb-3">{l.autor}</p>
-            <dl className="text-xs space-y-1.5 mb-4">
-              <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">ISBN</dt>
-                <dd className="text-slate-700 font-mono">{l.isbn}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Categoría</dt>
-                <dd className="text-slate-700">{categorias.find(c => c.id === l.categoriaId)?.nombre}</dd>
-              </div>
-            </dl>
-            <button
-              disabled={l.stock <= 0 || !usuarioActivo}
-              onClick={() => solicitar(l.id)}
-              className="mt-auto w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-md transition text-sm"
-            >
-              {l.stock > 0 ? 'Solicitar préstamo' : 'No disponible'}
-            </button>
-          </div>
-        ))}
-        {filtrados.length === 0 && (
-          <div className="col-span-full bg-white border border-dashed border-slate-300 rounded-lg py-16 text-center">
-            <p className="text-sm text-slate-500">No se encontraron libros con los filtros aplicados</p>
-          </div>
-        )}
-      </div>
 
       {/* Comprobante reciente */}
-      {prestamoReciente && (
-        <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-600 rounded-lg p-5">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Préstamo registrado correctamente</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Comprobante N.º {prestamoReciente.codigo}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                const u = usuarios.find(x => x.id === prestamoReciente.usuarioId)!;
-                const lib = libros.find(x => x.id === prestamoReciente.libroId)!;
-                generarPDF(prestamoReciente, u, lib);
-              }}
-              className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-1.5 rounded-md font-medium transition text-sm"
-            >
-              Descargar PDF
-            </button>
+      {ultimoPrestamo && (
+        <div style={{
+          background: "#f0fdf4",
+          border: "1.5px solid #86efac",
+          borderRadius: "10px",
+          padding: "1rem 1.25rem",
+          marginBottom: "1.25rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "0.75rem",
+        }}>
+          <div>
+            <p style={{ fontWeight: 700, color: "#15803d", marginBottom: "0.25rem" }}>
+              ✅ Préstamo registrado exitosamente
+            </p>
+            <p style={{ fontSize: "0.85rem", color: "#166534" }}>
+              Código: <strong>{ultimoPrestamo.codigo}</strong> &nbsp;·&nbsp;
+              Préstamo: {ultimoPrestamo.fechaPrestamo} &nbsp;·&nbsp;
+              Límite: {ultimoPrestamo.fechaLimite}
+            </p>
           </div>
-          <dl className="grid md:grid-cols-3 gap-3 text-sm">
-            <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide">Fecha de préstamo</dt>
-              <dd className="text-slate-900 mt-0.5">{prestamoReciente.fechaPrestamo}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide">Fecha límite</dt>
-              <dd className="text-slate-900 mt-0.5">{prestamoReciente.fechaLimite}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide">Estado</dt>
-              <dd className="text-slate-900 mt-0.5">{prestamoReciente.estado}</dd>
-            </div>
-          </dl>
+          <button
+            className="success"
+            onClick={() => {
+              const libro = libros.find((l) => l.id === ultimoPrestamo.libroId)!;
+              const usuario = usuarios.find((u) => u.id === ultimoPrestamo.usuarioId)!;
+              generarPDF(ultimoPrestamo, usuario, libro);
+            }}
+          >
+            📄 Descargar PDF
+          </button>
         </div>
       )}
+
+      {/* Tarjetas */}
+      <div className="grid">
+        {librosFiltrados.length === 0 && (
+          <p style={{ gridColumn: "1/-1", textAlign: "center", color: "#94a3b8", padding: "2rem 0" }}>
+            No se encontraron libros.
+          </p>
+        )}
+        {librosFiltrados.map((l) => {
+          const categoria = categorias.find((c) => c.id === l.categoriaId);
+          const sinStock = l.stock === 0;
+          const sinUsuario = !usuarioActivo;
+          return (
+            <div className="card" key={l.id}>
+              <h3>{l.titulo}</h3>
+              <p>✍️ {l.autor}</p>
+              <p>🏷️ {categoria?.nombre ?? "—"}</p>
+              <p style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>ISBN: {l.isbn}</p>
+              <p style={{ margin: "0.6rem 0" }}>
+                Stock:{" "}
+                <span
+                  className="badge"
+                  style={sinStock
+                    ? { background: "#fee2e2", color: "#dc2626" }
+                    : { background: "#dcfce7", color: "#15803d" }}
+                >
+                  {l.stock} disponibles
+                </span>
+              </p>
+              <button
+                className="success"
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                disabled={sinStock || sinUsuario}
+                onClick={() => solicitar(l.id)}
+                title={
+                  sinUsuario ? "Selecciona un usuario activo" :
+                  sinStock ? "Sin stock disponible" :
+                  `Solicitar como ${usuarioObj?.nombres ?? ""}`
+                }
+              >
+                {sinStock ? "❌ Sin stock" : "📚 Solicitar Préstamo"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
