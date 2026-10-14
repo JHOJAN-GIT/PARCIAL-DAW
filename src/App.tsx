@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { BibliotecaProvider } from './context/BibliotecaContext';
-import Navbar from './components/Navbar';
-import AdminCategorias from './pages/admin/AdminCategorias';
-import AdminLibros from './pages/admin/AdminLibros';
-import AdminUsuarios from './pages/admin/AdminUsuarios';
-import BuscarLibros from './pages/user/BuscarLibros';
-import Historial from './pages/user/Historial';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BibliotecaProvider } from "./context/BibliotecaContext";
+import Navbar from "./components/Navbar";
+import AdminCategorias from "./pages/admin/AdminCategorias";
+import AdminLibros from "./pages/admin/AdminLibros";
+import AdminUsuarios from "./pages/admin/AdminUsuarios";
+import BuscarLibros from "./pages/user/BuscarLibros";
+import Historial from "./pages/user/Historial";
 
 export default function App() {
   return (
