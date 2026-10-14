@@ -1,4 +1,3 @@
-```tsx
 import { createContext, useContext, type ReactNode } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { Categoria, Libro, Usuario, Prestamo } from "../types";
@@ -47,11 +46,8 @@ export function BibliotecaProvider({ children }: { children: ReactNode }) {
 
 export const useBiblioteca = () => {
   const ctx = useContext(BibliotecaContext);
-
   if (!ctx) {
     throw new Error("Debe usarse dentro de BibliotecaProvider");
   }
-
   return ctx;
 };
-```
